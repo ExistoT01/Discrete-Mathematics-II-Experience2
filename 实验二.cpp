@@ -1,6 +1,8 @@
 ﻿#include <iostream>
 #include <vector>
 #include <string>
+#include <cstring>
+#include <algorithm>
 #include "Matrix.h"
 using namespace std;
 
@@ -12,6 +14,7 @@ public:
 	//变量
 	vector<vector<int>> adjMatrix;//邻接矩阵
 	vector<vector<int>> incMatrix;//关联矩阵
+	vector<vector<int>> spaAdjMatrix;//生成树邻接矩阵
 	int eList[maxn];
 	int eListCNT;
 	int n;//顶点数
@@ -59,6 +62,7 @@ public:
 	vector<vector<int>> toDeterminant(vector<vector<int>> matrix);
 	vector<vector<int>> toDeterminant(vector<vector<int>> matrix, int row, int col);
 	void calcSpace();//求环路空间与断集空间
+	int getEdge(int v1, int v2);
 };
 
 int main()
@@ -349,7 +353,7 @@ void solution::calcSpanningTree()
 		cout << endl;
 	}
 
-	vector<vector<int>> spaAdjMatrix;
+	
 
 	for (int i = 0; i <= n; i++)
 	{
@@ -424,15 +428,19 @@ void solution::calcSpace()
 	vector<vector<int>> samMatrix;
 	int cnt = 0;
 	int v[maxn] = { 0 };
+
+
+	//求解
 	for (int index = 1; index <= m; index++)
 	{
 		
 		//如果是生成树中的边
 		if (edgeList[index]) {
+			cout << "割集" << endl;
 			numOfFragmentation++;
 			char* tem = new char[maxn];
 			_itoa(index, tem, 10);
-			fragmentationSpace[numOfBasedLoop] = tem;
+			fragmentationSpace[numOfFragmentation] = tem;
 
 			//找不是生成树中的边
 			for (int i = 1; i <= m; i++)
@@ -469,7 +477,7 @@ void solution::calcSpace()
 					//G连通  <=> r(M(G))=r(Mf(G))=n-1. 
 					if (rankOfDeterminant(n - 1, samMatrix) == n - 1) {
 						_itoa(i, tem, 10);
-						fragmentationSpace[numOfBasedLoop] += tem;
+						fragmentationSpace[numOfFragmentation] += tem;
 					}
 
 				}
@@ -478,50 +486,263 @@ void solution::calcSpace()
 			}
 
 			
-			cout << fragmentationSpace[numOfBasedLoop] << endl;
-
-
-
-
-
-
-
-
-			/*cnt = 0;
-			int target;
-			bool isTargerFind = false;*/
-
-			////找到与其他点都无边的点
-			//for (int row = 1; row <= n && !isTargerFind; row++)
-			//{
-			//	for (int col = 1; col <= m; col++)
-			//	{
-			//		if (edgeList[col]) {
-			//			if (col != index) {
-			//				v[row] += incMatrix[row][col];
-			//			}
-			//		}
-			//	}
-			//	if (v[row] == 0) {
-			//		target = row;
-			//		isTargerFind = true;
-			//	}
-			//}
-
-			//for (int i = 1; i <= m; i++)
-			//{
-			//	if (incMatrix[target][i] && i != index) {
-			//		_itoa(i, tem, 10);
-			//		fragmentationSpace[numOfBasedLoop] += tem;
-			//	}
-			//}
-			//cout << "index = " << index << endl;
-			//cout << fragmentationSpace[numOfBasedLoop];
-
+			cout << fragmentationSpace[numOfFragmentation] << endl;
 		}
 		//如果是剩余的边
 		else {
+			cout << "环路" << endl;
+			numOfBasedLoop++;
+			char* tem = new char[maxn];
+			_itoa(index, tem, 10);
+			basedLoopSpace[numOfBasedLoop] = "";
+			vector<int> list;
 
+			//先找出连接的两个点
+			int v1, v2;
+			v1 = v2 = 0;
+
+			samMatrix.clear();
+			samMatrix.assign(incMatrix.begin(), incMatrix.end());
+
+			for (int j = 1; j <= m; j++)
+			{
+				if (edgeList[j] == 0 && j != index) {
+					for (int i = 1; i <= n; i++)
+					{
+						samMatrix[i][j] = 0;
+					}
+				}
+			}
+
+			//displayMatrix(samMatrix, n, m, 1);
+
+			for (int i = 1; i <= n; i++)
+			{
+				if (samMatrix[i][index]) {
+					if (v1 == 0) {
+						v1 = i;
+					}
+					else
+					{
+						v2 = i;
+					}
+				}
+			}
+
+			//cout << "v1 " << v1 << " v2 " << v2 << endl;
+
+			//设置vis数组遍历
+			bool vis[maxn] = { 0 };
+			int dis[maxn] = { 0 };
+			int parent[maxn] = { 0 };
+			for (int i = 1; i <= n; i++)
+			{
+				vis[i] = false;
+				dis[i] = 0x3f3f3f;
+				parent[i] = -1;
+			}
+
+			int cur = v1;
+			dis[cur] = 0;
+			while (vis[v2]!= true)
+			{
+				vis[cur] = true;
+				
+				int minDis = 0x3f3f3f;
+				int nextCur = -1;
+				for (int i = 1; i <= n; i++)
+				{
+					if (spaAdjMatrix[cur][i] && !vis[i]) {
+						//cout << "cur " << cur << " i " << i << endl;
+						dis[i] = min(dis[i], dis[cur] + 1);
+						if (dis[i] < minDis) {
+							minDis = dis[i];
+							nextCur = i;
+						}
+					}
+				}
+				if (nextCur == -1) {
+					cur = parent[cur];
+				}
+				else {
+					parent[nextCur] = cur;
+					cur = nextCur;
+				}			
+			}
+
+
+			cur = v2;
+			while (cur != v1) {
+				list.push_back(cur);
+				cur = parent[cur];		
+			}
+			list.push_back(v1);
+
+			for (int i = 0; i < list.size(); i++)
+			{
+				//cout << endl << "list" << i << "= " << list[i] << endl;
+				if (i == list.size() - 1) {
+					_itoa(getEdge(list[i], list[0]), tem, 10);
+				}
+				else {
+					_itoa(getEdge(list[i], list[i + 1]), tem, 10);
+
+				}
+				basedLoopSpace[numOfBasedLoop] += tem;
+			}
+			
+			cout << basedLoopSpace[numOfBasedLoop] << endl;
 		}
 	}
+
+
+	//输出
+	cout << endl;
+	cout << "#==========输出基本回路系统" << endl;
+	cout << endl;
+
+	cout << '{';
+	for (int i = 1; i <= numOfBasedLoop; i++)
+	{
+		for (int j = 0; j < basedLoopSpace[i].size(); j++)
+		{
+			cout << "e" << basedLoopSpace[i][j];
+		}
+		if (i != numOfBasedLoop)
+			cout << ", ";
+	}
+	cout << '}';
+
+	//假定回路割集最多3条
+
+
+
+
+	int icnt = 0;
+	//环路空间
+
+	cout << endl;
+	cout << "#==========输出环路空间" << endl;
+	cout << endl;
+	
+	string ans = "";
+
+	cout << "Φ" << endl;
+	for (int i = 1; i <= numOfBasedLoop; i++)
+	{
+		icnt++;
+
+		ans += basedLoopSpace[i];
+		for (int j = i + 1; j <= numOfBasedLoop; j++)
+		{
+			string tem;
+			tem = basedLoopSpace[i] + basedLoopSpace[j];
+
+			sort(tem.begin(), tem.end());
+			string::iterator iterEnd = unique(tem.begin(), tem.end());
+			tem.erase(iterEnd, tem.end());
+
+			//cout << tem << endl;
+
+			for (int i = 0; i < tem.size(); i++)
+			{
+				cout << tem[i];
+				if (i != tem.size() - 1)cout << ", ";
+			}
+			cout << endl;
+			
+		}
+
+
+	}
+
+	sort(ans.begin(), ans.end());
+	string::iterator iterEnd = unique(ans.begin(), ans.end());
+	ans.erase(iterEnd, ans.end());
+
+	for (int i = 0; i < ans.size(); i++)
+	{
+		cout << ans[i];
+		if (i != ans.size() - 1)cout << ", ";
+	}
+	cout << endl;
+
+
+	cout << endl;
+	cout << "#==========输出基本割集系统" << endl;
+	cout << endl;
+
+	cout << '{';
+	for (int i = 1; i <= numOfFragmentation; i++)
+	{
+		cout << '{';
+		for (int j = 0; j < fragmentationSpace[i].size(); j++)
+		{
+			cout << "e" << fragmentationSpace[i][j];
+			if (j != fragmentationSpace[i].size()-1)
+				cout << ", ";
+		}
+		
+		cout << '}';
+		if (i != numOfFragmentation)
+			cout << ", ";
+	}
+	cout << '}';
+
+	cout << endl;
+	cout << "#==========输出断集空间" << endl;
+	cout << endl;
+
+	ans = "";
+
+	cout << "Φ" << endl;
+	for (int i = 1; i <= numOfFragmentation; i++)
+	{
+		icnt++;
+
+		ans += fragmentationSpace[i];
+		for (int j = i + 1; j <= numOfFragmentation; j++)
+		{
+			string tem;
+			tem = fragmentationSpace[i] + fragmentationSpace[j];
+
+			sort(tem.begin(), tem.end());
+			string::iterator iterEnd = unique(tem.begin(), tem.end());
+			tem.erase(iterEnd, tem.end());
+
+			//cout << tem << endl;
+
+			for (int i = 0; i < tem.size(); i++)
+			{
+				cout << tem[i];
+				if (i != tem.size() - 1)cout << ", ";
+			}
+			cout << endl;
+
+		}
+
+
+	}
+
+	sort(ans.begin(), ans.end());
+	iterEnd = unique(ans.begin(), ans.end());
+	ans.erase(iterEnd, ans.end());
+
+	for (int i = 0; i < ans.size(); i++)
+	{
+		cout << ans[i];
+		if (i != ans.size() - 1)cout << ", ";
+	}
+	cout << endl;
+}
+
+int solution::getEdge(int v1, int v2)
+{
+	for (int j = 1; j <= m; j++)
+	{
+		if (incMatrix[v1][j] && incMatrix[v2][j])
+			return j;
+	}
+
+	return 0;
 }
