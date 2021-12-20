@@ -4,6 +4,7 @@
 #include <cstring>
 #include <algorithm>
 #include "Matrix.h"
+#include <bitset>
 using namespace std;
 
 const int maxn = 50;
@@ -20,11 +21,13 @@ public:
 	int n;//顶点数
 	int m;//边数
 	int numOfSpanningTree;
-	string basedLoopSpace[maxn];//环路空间
-	string fragmentationSpace[maxn];//断集空间
+	vector<vector<int>> basedLoopSpace;//环路空间
+	vector<vector<int>> fragmentationSpace;//断集空间
 	int edgeList[maxn] = { 0 };//边集,1为生成树的边，0为剩余边
 	int numOfBasedLoop;//环路数
 	int numOfFragmentation;//断集数
+	int numOfIndex;
+	vector<vector<int>> myIndex;
 
 
 	//函数
@@ -38,18 +41,7 @@ public:
 		numOfSpanningTree = 0;
 		numOfBasedLoop = 0;
 		numOfFragmentation = 0;
-		basedLoopSpace[0] = "";
-		fragmentationSpace[0] = "";
-
-	}
-
-	solution(int n) {
-		this->n = n;
-		this->m = 0;
-		eListCNT = 0;
-		numOfSpanningTree = 0;
-		numOfBasedLoop = 0;
-		numOfFragmentation = 0;
+		numOfIndex = 0;
 	}
 
 	void setN();
@@ -63,6 +55,7 @@ public:
 	vector<vector<int>> toDeterminant(vector<vector<int>> matrix, int row, int col);
 	void calcSpace();//求环路空间与断集空间
 	int getEdge(int v1, int v2);
+	void generateIndex(int n);
 };
 
 int main()
@@ -283,7 +276,7 @@ void solution::calcSpanningTree()
 
 	//关联矩阵求最小生成树,删除v1
 	int list[maxn];
-	int eListNum;
+	int eListNum = 0;
 	for (int index = 1; index <= eListCNT; index++)
 	{
 		eListNum = eList[index];
@@ -329,7 +322,7 @@ void solution::calcSpanningTree()
 	cout << "共有" << numOfSpanningTree << "生成树" << endl;
 	
 	cout << endl;
-	cout << "#============其中一棵生成树" << endl;
+	cout << "#===============================其中一棵生成树" << endl;
 	cout << endl;
 
 	cout << endl;
@@ -436,11 +429,10 @@ void solution::calcSpace()
 		
 		//如果是生成树中的边
 		if (edgeList[index]) {
-			cout << "割集" << endl;
+			//cout << "割集" << endl;
 			numOfFragmentation++;
-			char* tem = new char[maxn];
-			_itoa(index, tem, 10);
-			fragmentationSpace[numOfFragmentation] = tem;
+			vector<int> fragmentation;
+			fragmentation.push_back(index);
 
 			//找不是生成树中的边
 			for (int i = 1; i <= m; i++)
@@ -463,21 +455,10 @@ void solution::calcSpace()
 						samMatrix.push_back(tem);
 					}
 
-					//for (int iii = 0; iii < n-1; iii++)
-					//{
-					//	for (int jjj = 0; jjj < n-1; jjj++)
-					//	{
-					//		cout << samMatrix[iii][jjj] << " ";
-					//	}
-					//	cout << endl;
-					//}
-
-					//cout << "*" << rankOfDeterminant(n - 1, samMatrix) << endl;
 
 					//G连通  <=> r(M(G))=r(Mf(G))=n-1. 
 					if (rankOfDeterminant(n - 1, samMatrix) == n - 1) {
-						_itoa(i, tem, 10);
-						fragmentationSpace[numOfFragmentation] += tem;
+						fragmentation.push_back(i);
 					}
 
 				}
@@ -485,16 +466,21 @@ void solution::calcSpace()
 				
 			}
 
-			
-			cout << fragmentationSpace[numOfFragmentation] << endl;
+			/*for (int i = 0; i < fragmentation.size(); i++)
+			{
+				cout << fragmentation[i];
+			}
+			cout << endl;*/
+
+			sort(fragmentation.begin(), fragmentation.end());
+			fragmentationSpace.push_back(fragmentation);
 		}
 		//如果是剩余的边
 		else {
-			cout << "环路" << endl;
+			//cout << "环路" << endl;
 			numOfBasedLoop++;
-			char* tem = new char[maxn];
-			_itoa(index, tem, 10);
-			basedLoopSpace[numOfBasedLoop] = "";
+			vector<int> basedLoop;
+
 			vector<int> list;
 
 			//先找出连接的两个点
@@ -582,36 +568,44 @@ void solution::calcSpace()
 			{
 				//cout << endl << "list" << i << "= " << list[i] << endl;
 				if (i == list.size() - 1) {
-					_itoa(getEdge(list[i], list[0]), tem, 10);
+					basedLoop.push_back(getEdge(list[i], list[0]));
 				}
 				else {
-					_itoa(getEdge(list[i], list[i + 1]), tem, 10);
+					basedLoop.push_back(getEdge(list[i], list[i + 1]));
 
 				}
-				basedLoopSpace[numOfBasedLoop] += tem;
 			}
 			
-			cout << basedLoopSpace[numOfBasedLoop] << endl;
+			/*for (int i = 0; i < basedLoop.size(); i++)
+			{
+				cout << basedLoop[i];
+			}
+			cout << endl;*/
+
+			sort(basedLoop.begin(), basedLoop.end());
+			basedLoopSpace.push_back(basedLoop);
 		}
 	}
 
 
 	//输出
+
+
 	cout << endl;
 	cout << "#==========输出基本回路系统" << endl;
 	cout << endl;
 
-	cout << '{';
-	for (int i = 1; i <= numOfBasedLoop; i++)
+	cout << "{ ";
+	for (int i = 0; i < numOfBasedLoop; i++)
 	{
 		for (int j = 0; j < basedLoopSpace[i].size(); j++)
 		{
 			cout << "e" << basedLoopSpace[i][j];
 		}
-		if (i != numOfBasedLoop)
+		if (i != numOfBasedLoop-1)
 			cout << ", ";
 	}
-	cout << '}';
+	cout << " }";
 
 	//假定回路割集最多3条
 
@@ -624,58 +618,51 @@ void solution::calcSpace()
 	cout << endl;
 	cout << "#==========输出环路空间" << endl;
 	cout << endl;
+
+	cout << "{ Φ, ";
 	
-	string ans = "";
+	generateIndex(numOfBasedLoop);
+	//cout << "numOfIndex = " << numOfIndex << endl;
 
-	cout << "Φ" << endl;
-	for (int i = 1; i <= numOfBasedLoop; i++)
+	vector<int> tem;
+
+	for (int i = 0; i < numOfIndex; i++)
 	{
-		icnt++;
-
-		ans += basedLoopSpace[i];
-		for (int j = i + 1; j <= numOfBasedLoop; j++)
+		vector<int>().swap(tem);
+		for (int j = 0; j < myIndex[i].size(); j++)
 		{
-			string tem;
-			tem = basedLoopSpace[i] + basedLoopSpace[j];
-
-			sort(tem.begin(), tem.end());
-			string::iterator iterEnd = unique(tem.begin(), tem.end());
-			tem.erase(iterEnd, tem.end());
-
-			//cout << tem << endl;
-
-			for (int i = 0; i < tem.size(); i++)
-			{
-				cout << tem[i];
-				if (i != tem.size() - 1)cout << ", ";
-			}
-			cout << endl;
-			
+			tem.insert(tem.end(),
+				basedLoopSpace[myIndex[i][j]].begin(),
+				basedLoopSpace[myIndex[i][j]].end());			
 		}
 
+		sort(tem.begin(), tem.end());
+		vector<int>::iterator itEnd = unique(tem.begin(), tem.end());
+		tem.erase(itEnd, tem.end());
 
+		cout << "{ ";
+		for (int j = 0; j < tem.size(); j++)
+		{
+			cout << "e" << tem[j];
+			if (j != tem.size() - 1)
+				cout << ", ";
+		}
+		cout << " }";
+		if (i != numOfIndex - 1)
+			cout << ", ";
 	}
 
-	sort(ans.begin(), ans.end());
-	string::iterator iterEnd = unique(ans.begin(), ans.end());
-	ans.erase(iterEnd, ans.end());
-
-	for (int i = 0; i < ans.size(); i++)
-	{
-		cout << ans[i];
-		if (i != ans.size() - 1)cout << ", ";
-	}
-	cout << endl;
+	cout << " }" << endl;
 
 
 	cout << endl;
 	cout << "#==========输出基本割集系统" << endl;
 	cout << endl;
 
-	cout << '{';
-	for (int i = 1; i <= numOfFragmentation; i++)
+	cout << "{ ";
+	for (int i = 0; i < numOfFragmentation; i++)
 	{
-		cout << '{';
+		cout << "{ ";
 		for (int j = 0; j < fragmentationSpace[i].size(); j++)
 		{
 			cout << "e" << fragmentationSpace[i][j];
@@ -683,57 +670,49 @@ void solution::calcSpace()
 				cout << ", ";
 		}
 		
-		cout << '}';
-		if (i != numOfFragmentation)
+		cout << " }";
+		if (i != numOfFragmentation-1)
 			cout << ", ";
 	}
-	cout << '}';
+	cout << " }" << endl;
 
 	cout << endl;
 	cout << "#==========输出断集空间" << endl;
 	cout << endl;
 
-	ans = "";
+	cout << "{ Φ, ";
 
-	cout << "Φ" << endl;
-	for (int i = 1; i <= numOfFragmentation; i++)
+	generateIndex(numOfFragmentation);
+
+	for (int i = 0; i < numOfIndex; i++)
 	{
-		icnt++;
-
-		ans += fragmentationSpace[i];
-		for (int j = i + 1; j <= numOfFragmentation; j++)
+		vector<int>().swap(tem);
+		for (int j = 0; j < myIndex[i].size(); j++)
 		{
-			string tem;
-			tem = fragmentationSpace[i] + fragmentationSpace[j];
-
-			sort(tem.begin(), tem.end());
-			string::iterator iterEnd = unique(tem.begin(), tem.end());
-			tem.erase(iterEnd, tem.end());
-
-			//cout << tem << endl;
-
-			for (int i = 0; i < tem.size(); i++)
-			{
-				cout << tem[i];
-				if (i != tem.size() - 1)cout << ", ";
-			}
-			cout << endl;
-
+			tem.insert(tem.end(),
+				fragmentationSpace[myIndex[i][j]].begin(),
+				fragmentationSpace[myIndex[i][j]].end());
 		}
+		
 
+		sort(tem.begin(), tem.end());
+		vector<int>::iterator itEnd = unique(tem.begin(), tem.end());
+		tem.erase(itEnd, tem.end());
 
+		cout << "{ ";
+		for (int j = 0; j < tem.size(); j++)
+		{
+			cout << "e" << tem[j];
+			if (j != tem.size() - 1)
+				cout << ", ";
+		}
+		cout << " }";
+		if (i != numOfIndex - 1)
+			cout << ", ";
 	}
 
-	sort(ans.begin(), ans.end());
-	iterEnd = unique(ans.begin(), ans.end());
-	ans.erase(iterEnd, ans.end());
+	cout << " }" << endl;
 
-	for (int i = 0; i < ans.size(); i++)
-	{
-		cout << ans[i];
-		if (i != ans.size() - 1)cout << ", ";
-	}
-	cout << endl;
 }
 
 int solution::getEdge(int v1, int v2)
@@ -745,4 +724,37 @@ int solution::getEdge(int v1, int v2)
 	}
 
 	return 0;
+}
+
+void solution::generateIndex(int n)
+{
+	vector<vector<int>>().swap(myIndex);
+	numOfIndex = 0;
+	
+	for (int k = 2; k <= n; k++)
+	{
+		long long comb = (1 << k) - 1;
+
+		while (comb < (1 << n)) {
+			vector<int> tem;
+			bitset<8> bs(comb);
+			//cout << bs << endl;
+			for (int i = 0; i < n; i++)
+			{
+				if (bs[i] == 1)
+					tem.push_back(i);
+			}
+			int x = comb & -comb, y = comb + x;
+			comb = ((comb & ~y) / x >> 1) | y;
+
+			numOfIndex++;
+			/*for (int i = 0; i < tem.size(); i++)
+			{
+				cout << "tem[" << i << "] = " << tem[i] << " ";
+			}*/
+			//cout << endl;
+			myIndex.push_back(tem);
+		}
+		
+	}
 }
