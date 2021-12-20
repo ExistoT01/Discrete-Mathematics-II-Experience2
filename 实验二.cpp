@@ -29,7 +29,6 @@ public:
 	int numOfIndex;
 	vector<vector<int>> myIndex;
 
-
 	//函数
 
 	//constructor
