@@ -565,7 +565,7 @@ void solution::calcSpace()
 		if (i != numOfBasedLoop - 1)
 			cout << ", ";
 	}
-	cout << " }";
+	cout << " }" << endl;
 
 	//环路空间
 
@@ -575,9 +575,20 @@ void solution::calcSpace()
 
 	cout << "{ Φ, ";
 
+	for (int i = 0; i < numOfBasedLoop; i++)
+	{
+		cout << "{ ";
+		for (int j = 0; j < basedLoopSpace[i].size(); j++)
+		{
+			cout << "e" << basedLoopSpace[i][j];
+		}
+		cout << " }, ";
+	}
+
 	generateIndex(numOfBasedLoop);
 
 	vector<int> tem;
+	vector<int> sameItem;
 
 	for (int i = 0; i < numOfIndex; i++)
 	{
@@ -590,15 +601,30 @@ void solution::calcSpace()
 		}
 
 		sort(tem.begin(), tem.end());
-		vector<int>::iterator itEnd = unique(tem.begin(), tem.end());
+		for (vector<int>::iterator it = tem.begin() + 1; it < tem.end(); it++)
+		{
+			if (*it == *(it - 1))
+				sameItem.push_back(*it);
+		}
+
+		vector<int>::iterator itEnd = unique(tem.begin(), tem.end());		
 		tem.erase(itEnd, tem.end());
+
+		itEnd = unique(sameItem.begin(), sameItem.end());
+		sameItem.erase(itEnd, sameItem.end());
+
+		vector<int>::iterator ptr;
+		for (vector<int>::iterator it = sameItem.begin(); it < sameItem.end(); it++)
+		{
+			ptr = find(tem.begin(), tem.end(), *it);
+			if (ptr != tem.end())
+				tem.erase(ptr);
+		}
 
 		cout << "{ ";
 		for (int j = 0; j < tem.size(); j++)
 		{
 			cout << "e" << tem[j];
-			if (j != tem.size() - 1)
-				cout << ", ";
 		}
 		cout << " }";
 		if (i != numOfIndex - 1)
@@ -635,6 +661,19 @@ void solution::calcSpace()
 
 	cout << "{ Φ, ";
 
+	for (int i = 0; i < numOfFragmentation; i++)
+	{
+		cout << "{ ";
+		for (int j = 0; j < fragmentationSpace[i].size(); j++)
+		{
+			cout << "e" << fragmentationSpace[i][j];
+			if (j != fragmentationSpace[i].size() - 1)
+				cout << ", ";
+		}
+
+		cout << " }, ";
+	}
+
 	generateIndex(numOfFragmentation);
 
 	for (int i = 0; i < numOfIndex; i++)
@@ -649,8 +688,27 @@ void solution::calcSpace()
 
 
 		sort(tem.begin(), tem.end());
+
+		vector<int>().swap(sameItem);
+		for (vector<int>::iterator it = tem.begin() + 1; it < tem.end(); it++)
+		{
+			if (*it == *(it - 1))
+				sameItem.push_back(*it);
+		}
+
 		vector<int>::iterator itEnd = unique(tem.begin(), tem.end());
 		tem.erase(itEnd, tem.end());
+
+		itEnd = unique(sameItem.begin(), sameItem.end());
+		sameItem.erase(itEnd, sameItem.end());
+
+		vector<int>::iterator ptr;
+		for (vector<int>::iterator it = sameItem.begin(); it < sameItem.end(); it++)
+		{
+			ptr = find(tem.begin(), tem.end(), *it);
+			if (ptr != tem.end())
+				tem.erase(ptr);
+		}
 
 		cout << "{ ";
 		for (int j = 0; j < tem.size(); j++)
